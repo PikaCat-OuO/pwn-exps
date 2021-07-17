@@ -3,7 +3,7 @@ from LibcSearcher import *
 
 context.arch = 'i386'
 elf = ELF('./axb_2019_fmt32')
-p = remote('node3.buuoj.cn', 29565)
+p = process(['./axb_2019_fmt32'])
 
 
 def exec_fmt(payload):
